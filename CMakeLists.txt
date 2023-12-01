@@ -8,10 +8,10 @@ set(CMAKE_CXX_FLAGS "-Wall -Werror -Wshadow  -std=c++20 -fno-omit-frame-pointer 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 find_package(Boost COMPONENTS regex REQUIRED)
-find_package(range-v3 REQUIRED)
-find_package(RapidJSON REQUIRED)
+#  find_package(range-v3 REQUIRED)
+#  find_package(RapidJSON REQUIRED)
 find_package(fmt REQUIRED)
-find_package(TBB REQUIRED)
+#  find_package(TBB REQUIRED)
 
 find_package(PkgConfig)
 pkg_check_modules(CRYPTOPP libcryptopp)
@@ -24,10 +24,10 @@ endif()
 
 set (DEFAULT_LIBS fmt)
 
-# add_executable(day1 src/day1.cc)
-# target_compile_features(day1 PRIVATE cxx_std_20)
-# target_link_libraries(day1 PRIVATE ${DEFAULT_LIBS})
-# 
+add_executable(day1 src/day1.cc)
+target_compile_features(day1 PRIVATE cxx_std_20)
+target_link_libraries(day1 PRIVATE ${DEFAULT_LIBS} boost_regex)
+
 # add_executable(day2 src/day2.cc)
 # target_compile_features(day2 PRIVATE cxx_std_20)
 # target_link_libraries(day2 PRIVATE ${DEFAULT_LIBS})
