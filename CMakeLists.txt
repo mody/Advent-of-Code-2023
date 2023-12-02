@@ -28,10 +28,10 @@ add_executable(day1 src/day1.cc)
 target_compile_features(day1 PRIVATE cxx_std_20)
 target_link_libraries(day1 PRIVATE ${DEFAULT_LIBS} boost_regex)
 
-# add_executable(day2 src/day2.cc)
-# target_compile_features(day2 PRIVATE cxx_std_20)
-# target_link_libraries(day2 PRIVATE ${DEFAULT_LIBS})
-# 
+add_executable(day2 src/day2.cc)
+target_compile_features(day2 PRIVATE cxx_std_20)
+target_link_libraries(day2 PRIVATE ${DEFAULT_LIBS})
+
 # add_executable(day3 src/day3.cc)
 # target_compile_features(day3 PRIVATE cxx_std_20)
 # target_link_libraries(day3 PRIVATE ${DEFAULT_LIBS})
