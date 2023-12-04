@@ -36,10 +36,10 @@ add_executable(day3 src/day3.cc)
 target_compile_features(day3 PRIVATE cxx_std_20)
 target_link_libraries(day3 PRIVATE ${DEFAULT_LIBS})
 
-# add_executable(day4 src/day4.cc)
-# target_compile_features(day4 PRIVATE cxx_std_20)
-# target_link_libraries(day4 PRIVATE ${DEFAULT_LIBS} ${CRYPTOPP_LIBRARIES})
-# 
+add_executable(day4 src/day4.cc)
+target_compile_features(day4 PRIVATE cxx_std_20)
+target_link_libraries(day4 PRIVATE ${DEFAULT_LIBS} ${CRYPTOPP_LIBRARIES})
+
 # add_executable(day5 src/day5.cc)
 # target_compile_features(day5 PRIVATE cxx_std_20)
 # target_link_libraries(day5 PRIVATE ${DEFAULT_LIBS} boost_regex)
