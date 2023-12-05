@@ -3,6 +3,7 @@ project(AOC2023)
 
 #  set(CMAKE_CXX_FLAGS "-Wall -Werror -Wshadow -std=c++20 -fno-omit-frame-pointer -ggdb3 -O0")
 #  set(CMAKE_CXX_FLAGS "-Wall -Werror -Wshadow -std=c++20 -fno-omit-frame-pointer -ggdb3 -O0 -fsanitize=address")
+#  set(CMAKE_CXX_FLAGS "-Wall -Werror -Wshadow  -std=c++20 -fno-omit-frame-pointer -ggdb3 -O3")
 set(CMAKE_CXX_FLAGS "-Wall -Werror -Wshadow  -std=c++20 -fno-omit-frame-pointer -ggdb3 -O3 -fsanitize=address")
 #  set(CMAKE_CXX_FLAGS "-Wall -Werror -Wshadow  -std=c++20 -fno-omit-frame-pointer -ggdb3 -O3 -fsanitize=memory -fsanitize-memory-track-origins")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -40,10 +41,10 @@ add_executable(day4 src/day4.cc)
 target_compile_features(day4 PRIVATE cxx_std_20)
 target_link_libraries(day4 PRIVATE ${DEFAULT_LIBS} ${CRYPTOPP_LIBRARIES})
 
-# add_executable(day5 src/day5.cc)
-# target_compile_features(day5 PRIVATE cxx_std_20)
-# target_link_libraries(day5 PRIVATE ${DEFAULT_LIBS} boost_regex)
-# 
+add_executable(day5 src/day5.cc)
+target_compile_features(day5 PRIVATE cxx_std_20)
+target_link_libraries(day5 PRIVATE ${DEFAULT_LIBS} boost_regex tbb)
+
 # add_executable(day6 src/day6.cc)
 # target_compile_features(day6 PRIVATE cxx_std_20)
 # target_link_libraries(day6 PRIVATE ${DEFAULT_LIBS} boost_regex)
