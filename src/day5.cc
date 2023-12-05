@@ -1,11 +1,15 @@
 #include <fmt/core.h>
+#include <fmt/ranges.h>
 
 #include <boost/algorithm/string/constants.hpp>
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
 
 #include <range/v3/core.hpp>
+#include <range/v3/action/sort.hpp>
+#include <range/v3/action/unique.hpp>
 #include <range/v3/range/conversion.hpp>
+#include <range/v3/range_fwd.hpp>
 #include <range/v3/view/drop.hpp>
 #include <range/v3/view/transform.hpp>
 
@@ -31,17 +35,24 @@ struct Data {
     std::vector<Map> maps;
 
     uint64_t translate(uint64_t seed) const noexcept;
+    uint64_t translate(uint64_t seed, Map const& map) const noexcept;
 };
 
 
 uint64_t Data::translate(uint64_t seed) const noexcept
 {
     for (auto const& a_map : maps) {
-        for (auto const& [src, dst] : a_map) {
-            if (seed >= src && seed < (src + dst.size)) {
-                seed = (seed - src) + dst.dest;
-                break;
-            }
+        seed = translate(seed, a_map);
+    }
+    return seed;
+}
+
+uint64_t Data::translate(uint64_t seed, Map const& map) const noexcept
+{
+    for (auto const& [src, dst] : map) {
+        if (seed >= src && seed < (src + dst.size)) {
+            seed = (seed - src) + dst.dest;
+            break;
         }
     }
     return seed;
@@ -58,7 +69,7 @@ void part1(Data const& data)
     fmt::print("1: {}\n", lowest);
 }
 
-void part2(Data const& data)
+void part2_tbb(Data const& data)
 {
     std::atomic<uint64_t> lowest {std::numeric_limits<uint64_t>::max()};
     for (auto it = data.seeds.begin(); it != data.seeds.end();) {
@@ -72,6 +83,43 @@ void part2(Data const& data)
     }
 
     fmt::print("2: {}\n", lowest.load());
+}
+
+void part2_single(Data const& data)
+{
+    using Range = std::map<uint64_t, uint64_t>;
+
+    Range seeds;
+    for (auto it = data.seeds.begin(); it != data.seeds.end();) {
+        const uint64_t seed {*it++};
+        const uint64_t length {*it++};
+        seeds.insert({seed, length});
+    }
+
+    for (auto const& a_map : data.maps) {
+        std::vector<uint64_t> r2;
+        for (auto [from, length] : seeds) {
+            for (uint64_t seed = from; length > 0; --length, ++seed) {
+                r2.push_back(data.translate(seed, a_map));
+            }
+        }
+        r2 |= ranges::actions::sort | ranges::actions::unique;
+        Range r3;
+        uint64_t last_val{r2.front()}, last_length{1};
+        for (auto i : r2 | ranges::views::drop(1)) {
+            if (last_val + last_length == i) {
+                ++last_length;
+            } else {
+                r3.insert({last_val, last_length});
+                last_val = i;
+                last_length = 1;
+            }
+        }
+        r3.insert({last_val, last_length});
+        std::swap(seeds, r3);
+    }
+
+    fmt::print("2: {}\n", seeds.begin()->first);
 }
 
 int main()
@@ -134,7 +182,7 @@ int main()
     assert(data.maps.size() == 7);
 
     part1(data);
-    part2(data);
+    part2_tbb(data);
 
     return 0;
 }
