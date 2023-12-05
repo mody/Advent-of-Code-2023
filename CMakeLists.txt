@@ -9,19 +9,19 @@ set(CMAKE_CXX_FLAGS "-Wall -Werror -Wshadow  -std=c++20 -fno-omit-frame-pointer 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 find_package(Boost COMPONENTS regex REQUIRED)
-#  find_package(range-v3 REQUIRED)
+find_package(range-v3 REQUIRED)
 #  find_package(RapidJSON REQUIRED)
 find_package(fmt REQUIRED)
-#  find_package(TBB REQUIRED)
+find_package(TBB REQUIRED)
 
-find_package(PkgConfig)
-pkg_check_modules(CRYPTOPP libcryptopp)
-if (NOT CRYPTOPP_FOUND)
-    pkg_check_modules(CRYPTOPP libcrypto++)
-endif()
-if (NOT CRYPTOPP_FOUND)
-    message(FATAL_ERROR "Crypto++ library not found")
-endif()
+#  find_package(PkgConfig)
+#  pkg_check_modules(CRYPTOPP libcryptopp)
+#  if (NOT CRYPTOPP_FOUND)
+#      pkg_check_modules(CRYPTOPP libcrypto++)
+#  endif()
+#  if (NOT CRYPTOPP_FOUND)
+#      message(FATAL_ERROR "Crypto++ library not found")
+#  endif()
 
 set (DEFAULT_LIBS fmt)
 
@@ -39,7 +39,7 @@ target_link_libraries(day3 PRIVATE ${DEFAULT_LIBS})
 
 add_executable(day4 src/day4.cc)
 target_compile_features(day4 PRIVATE cxx_std_20)
-target_link_libraries(day4 PRIVATE ${DEFAULT_LIBS} ${CRYPTOPP_LIBRARIES})
+target_link_libraries(day4 PRIVATE ${DEFAULT_LIBS})
 
 add_executable(day5 src/day5.cc)
 target_compile_features(day5 PRIVATE cxx_std_20)
