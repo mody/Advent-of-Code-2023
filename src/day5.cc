@@ -5,63 +5,72 @@
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
 
-#include <range/v3/core.hpp>
+#include <boost/icl/interval.hpp>
+#include <boost/icl/interval_set.hpp>
+
 #include <range/v3/action/sort.hpp>
 #include <range/v3/action/unique.hpp>
+#include <range/v3/algorithm/find_if.hpp>
+#include <range/v3/core.hpp>
 #include <range/v3/range/conversion.hpp>
-#include <range/v3/range_fwd.hpp>
 #include <range/v3/view/drop.hpp>
 #include <range/v3/view/transform.hpp>
 
 #include <oneapi/tbb/parallel_for.h>
 
-#include <limits>
 #include <cstdint>
 #include <iostream>
-#include <string>
-#include <vector>
+#include <limits>
 #include <map>
+#include <source_location>
+#include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
 
-struct Destination
+struct Range
 {
-    uint64_t dest{0};
-    uint64_t size{0};
+    int64_t from{0}, to{0};
+};
+using Ranges = std::vector<Range>;
+
+struct Mapping
+{
+    int64_t src {0};
+    int64_t dest{0};
+    int64_t size{0};
 };
 
-using Map = std::map<uint64_t, Destination>;
+using Mappings = std::vector<Mapping>;
 
 struct Data {
-    std::vector<uint64_t> seeds;
-    std::vector<Map> maps;
+    std::vector<int64_t> seeds;
+    std::vector<Mappings> maps;
 
-    uint64_t translate(uint64_t seed) const noexcept;
-    uint64_t translate(uint64_t seed, Map const& map) const noexcept;
-};
-
-
-uint64_t Data::translate(uint64_t seed) const noexcept
-{
-    for (auto const& a_map : maps) {
-        seed = translate(seed, a_map);
-    }
-    return seed;
-}
-
-uint64_t Data::translate(uint64_t seed, Map const& map) const noexcept
-{
-    for (auto const& [src, dst] : map) {
-        if (seed >= src && seed < (src + dst.size)) {
-            seed = (seed - src) + dst.dest;
-            break;
+    int64_t translate(int64_t seed) const noexcept
+    {
+        for (auto const& a_map : maps) {
+            seed = translate(seed, a_map);
         }
+        return seed;
     }
-    return seed;
-}
+
+    int64_t translate(int64_t seed, Mappings const& mappings) const noexcept
+    {
+        for (auto const& m: mappings) {
+            if (seed >= m.src && seed < (m.src + m.size)) {
+                seed = (seed - m.src) + m.dest;
+                break;
+            }
+        }
+        return seed;
+    }
+};
 
 void part1(Data const& data)
 {
-    uint64_t lowest {std::numeric_limits<uint64_t>::max()};
-    for (uint64_t seed : data.seeds) {
+    int64_t lowest {std::numeric_limits<int64_t>::max()};
+    for (int64_t seed : data.seeds) {
         seed = data.translate(seed);
         lowest = std::min(lowest, seed);
     }
@@ -71,13 +80,13 @@ void part1(Data const& data)
 
 void part2_tbb(Data const& data)
 {
-    std::atomic<uint64_t> lowest {std::numeric_limits<uint64_t>::max()};
+    std::atomic<int64_t> lowest {std::numeric_limits<int64_t>::max()};
     for (auto it = data.seeds.begin(); it != data.seeds.end();) {
-        const uint64_t seed {*it++};
-        const uint64_t length {*it++};
-        oneapi::tbb::parallel_for(seed, seed + length, [&lowest, &data](uint64_t _seed) {
+        const int64_t seed {*it++};
+        const int64_t length {*it++};
+        oneapi::tbb::parallel_for(seed, seed + length, [&lowest, &data](int64_t _seed) {
             _seed = data.translate(_seed);
-            uint64_t prev = lowest.load();
+            int64_t prev = lowest.load();
             while (prev > _seed && !lowest.compare_exchange_weak(prev, _seed));
         });
     }
@@ -85,59 +94,68 @@ void part2_tbb(Data const& data)
     fmt::print("2: {}\n", lowest.load());
 }
 
-void part2_single(Data const& data)
+void dump(Ranges const& rr, std::string const& str)
 {
-    using Range = std::map<uint64_t, uint64_t>;
+    fmt::print("{}: [", str);
+    for (Range const& r : rr) {
+        fmt::print(",({}, {})", r.from, r.to);
+    }
+    fmt::print("]\n");
+    fflush(stdout);
+}
 
-    Range seeds;
+void part2_icl(Data const& data)
+{
+    using Interval = boost::icl::interval<int64_t>;
+    using ISet = boost::icl::interval_set<int64_t>;
+
+    ISet r1;
+
+    // auto dump = [](ISet const& r, std::string const& name, std::source_location src = std::source_location::current()) {
+    //     std::stringstream ss;
+    //     ss << r;
+    //     fmt::print("{}: {}\n", name, ss.str());
+    // };
+
     for (auto it = data.seeds.begin(); it != data.seeds.end();) {
-        const uint64_t seed {*it++};
-        const uint64_t length {*it++};
-        seeds.insert({seed, length});
+        const int64_t seed {*it++};
+        const int64_t length {*it++};
+        r1 += Interval::closed(seed, seed + length);
     }
 
     for (auto const& a_map : data.maps) {
-        std::vector<uint64_t> r2;
-        for (auto [from, length] : seeds) {
-            for (uint64_t seed = from; length > 0; --length, ++seed) {
-                r2.push_back(data.translate(seed, a_map));
+        ISet rx;
+        for (auto const& m : a_map) {
+            auto i1 {Interval::right_open(m.src, m.src + m.size)};
+            const int64_t diff = m.dest - m.src;
+            auto r2 = r1 & ISet{i1};
+            for (auto i2 : r2) {
+                r1 -= i2;
+                rx += Interval::right_open(i2.lower() + diff, i2.upper() + diff);
             }
         }
-        r2 |= ranges::actions::sort | ranges::actions::unique;
-        Range r3;
-        uint64_t last_val{r2.front()}, last_length{1};
-        for (auto i : r2 | ranges::views::drop(1)) {
-            if (last_val + last_length == i) {
-                ++last_length;
-            } else {
-                r3.insert({last_val, last_length});
-                last_val = i;
-                last_length = 1;
-            }
-        }
-        r3.insert({last_val, last_length});
-        std::swap(seeds, r3);
+        r1 += rx;
     }
 
-    fmt::print("2: {}\n", seeds.begin()->first);
+    fmt::print("2: {}\n", r1.begin()->lower());
 }
 
 int main()
 {
     Data data;
 
-    auto parse_map = []() {
-        Map map;
+    auto parse_map = []() -> Mappings {
+        Mappings mappings;
         std::string line;
         while (std::getline(std::cin, line)) {
             if (line.empty()) break;
             std::vector<std::string> parts;
             boost::algorithm::split(parts, line, boost::algorithm::is_any_of(" "), boost::token_compress_on);
             assert(parts.size() == 3);
-            map.insert(
-                {std::stoull(parts.at(1)), {.dest = std::stoull(parts.at(0)), .size = std::stoull(parts.at(2))}});
+            mappings.push_back(
+                {.src = std::stoll(parts.at(1)), .dest = std::stoll(parts.at(0)), .size = std::stoll(parts.at(2))});
         }
-        return map;
+        return mappings;
     };
 
     std::string line;
@@ -146,8 +164,8 @@ int main()
         using namespace ranges;
         std::vector<std::string> parts;
         boost::algorithm::split(parts, line, boost::algorithm::is_any_of(" "), boost::token_compress_on);
-        data.seeds = parts | views::drop(1) | views::transform([](auto&& v) { return std::stoull(v); })
-            | to<std::vector<uint64_t>>;
+        data.seeds = parts | views::drop(1) | views::transform([](auto&& v) { return std::stoll(v); })
+            | to<std::vector<int64_t>>;
         std::getline(std::cin, line); // empty line
     }
 
@@ -182,7 +200,7 @@ int main()
     assert(data.maps.size() == 7);
 
     part1(data);
-    part2_tbb(data);
+    part2_icl(data);
 
     return 0;
 }

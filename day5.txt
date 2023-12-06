@@ -236,7 +236,6 @@ humidity-to-location map:
 3681279745 3212002432 7986191
 1542227407 1156260177 112739686
 
-
 seeds: 79 14 55 13
 
 seed-to-soil map:
@@ -270,5 +269,4 @@ temperature-to-humidity map:
 humidity-to-location map:
 60 56 37
 56 93 4
-
 
