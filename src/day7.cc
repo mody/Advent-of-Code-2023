@@ -50,7 +50,18 @@ using Cards = std::array<Card, 5>;
 struct Deal
 {
     unsigned bid {0};
+    Strenght strenght {Strenght::ONE};
     Cards cards;
+
+    friend int operator<=> (Deal const& lhs, Deal const& rhs) noexcept
+    {
+        if (lhs.strenght == rhs.strenght) {
+            if (lhs.cards == rhs.cards) return 0;
+            return (lhs.cards < rhs.cards) ? -1 : 1;
+        } else {
+            return (lhs.strenght < rhs.strenght) ? -1 : 1;
+        }
+    }
 };
 
 using Game = std::vector<Deal>;
@@ -102,18 +113,6 @@ Strenght find_strength1(Cards cards) noexcept
     return s;
 }
 
-uint64_t process(Game game, auto&& cmp) noexcept
-{
-    actions::sort(game, cmp);
-
-    uint64_t result {0};
-    for (auto const& [idx, d] : views::enumerate(game)) {
-        result += (idx + 1) * d.bid;
-    }
-
-    return result;
-}
-
 Strenght find_strength2(Cards cards) noexcept
 {
     std::map<Card, unsigned> counts;
@@ -143,18 +142,25 @@ Strenght find_strength2(Cards cards) noexcept
     return find_strength1(cards);
 }
 
+uint64_t process(Game game) noexcept
+{
+    actions::sort(game, std::less{});
+
+    uint64_t result {0};
+    for (auto const& [idx, d] : views::enumerate(game)) {
+        result += (idx + 1) * d.bid;
+    }
+
+    return result;
+}
+
 void part1(Game game) noexcept
 {
-    auto cmp = [](Deal const& lhs, Deal const& rhs) noexcept {
-        const auto s1 = find_strength1(lhs.cards);
-        const auto s2 = find_strength1(rhs.cards);
-        if (s1 == s2) {
-            return lhs.cards < rhs.cards;
-        }
-        return s1 < s2;
-    };
+    for (auto& g : game) {
+        g.strenght = find_strength1(g.cards);
+    }
 
-    fmt::print("1: {}\n", process(std::move(game), cmp));
+    fmt::print("1: {}\n", process(std::move(game)));
 }
 
 void part2(Game game) noexcept
@@ -163,18 +169,10 @@ void part2(Game game) noexcept
         for (auto& c : g.cards) {
             if (c == Card::_J) c = Card::_X;
         }
+        g.strenght = find_strength2(g.cards);
     }
 
-    auto cmp = [](Deal const& lhs, Deal const& rhs) noexcept {
-        const auto s1 = find_strength2(lhs.cards);
-        const auto s2 = find_strength2(rhs.cards);
-        if (s1 == s2) {
-            return lhs.cards < rhs.cards;
-        }
-        return s1 < s2;
-    };
-
-    fmt::print("2: {}\n", process(std::move(game), cmp));
+    fmt::print("2: {}\n", process(std::move(game)));
 }
 
 int main()
