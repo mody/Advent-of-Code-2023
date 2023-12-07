@@ -49,10 +49,10 @@ add_executable(day6 src/day6.cc)
 target_compile_features(day6 PRIVATE cxx_std_20)
 target_link_libraries(day6 PRIVATE ${DEFAULT_LIBS})
 
-# add_executable(day7 src/day7.cc)
-# target_compile_features(day7 PRIVATE cxx_std_20)
-# target_link_libraries(day7 PRIVATE ${DEFAULT_LIBS})
-# 
+add_executable(day7 src/day7.cc)
+target_compile_features(day7 PRIVATE cxx_std_20)
+target_link_libraries(day7 PRIVATE ${DEFAULT_LIBS})
+
 # add_executable(day8 src/day8.cc)
 # target_compile_features(day8 PRIVATE cxx_std_20)
 # target_link_libraries(day8 PRIVATE ${DEFAULT_LIBS})
