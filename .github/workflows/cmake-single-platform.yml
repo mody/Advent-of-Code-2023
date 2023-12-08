@@ -11,6 +11,7 @@ on:
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: Debug
+  DEBIAN_FRONTEND: noninteractive
 
 jobs:
   build-gcc:
@@ -25,7 +26,7 @@ jobs:
     - name: Install deps
       run: |
           sudo apt-get update
-          sudo apt-get install cmake pkg-config libboost-dev libtbb-dev libfmt-dev libcrypto++-dev libboost-regex-dev librange-v3-dev rapidjson-dev
+          sudo apt-get install -y cmake pkg-config libboost-dev libtbb-dev libfmt-dev libcrypto++-dev libboost-regex-dev librange-v3-dev rapidjson-dev
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
@@ -54,7 +55,7 @@ jobs:
     - name: Install deps
       run: |
           sudo apt-get update
-          sudo apt-get install cmake pkg-config libboost-dev libtbb-dev libfmt-dev libcrypto++-dev libboost-regex-dev clang librange-v3-dev rapidjson-dev
+          sudo apt-get install -y cmake pkg-config libboost-dev libtbb-dev libfmt-dev libcrypto++-dev libboost-regex-dev clang librange-v3-dev rapidjson-dev
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
