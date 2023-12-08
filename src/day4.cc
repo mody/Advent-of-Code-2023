@@ -7,6 +7,7 @@
 #include <range/v3/action/sort.hpp>
 #include <range/v3/algorithm/set_algorithm.hpp>
 #include <range/v3/core.hpp>
+#include <range/v3/utility/iterator.hpp>
 #include <range/v3/view/subrange.hpp>
 #include <range/v3/view/transform.hpp>
 
@@ -79,7 +80,7 @@ int main()
             | ranges::actions::sort;
 
         std::vector<unsigned> result;
-        ranges::set_intersection(c.my, c.draw, std::back_inserter(result));
+        ranges::set_intersection(c.my, c.draw, ranges::back_inserter(result));
 
         c.match = result.size();
 
