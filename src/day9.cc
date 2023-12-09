@@ -56,6 +56,41 @@ void part1(Sequences const& input)
     fmt::print("1: {}\n", sum);
 }
 
+void part2(Sequences const& input)
+{
+    int64_t sum {0};
+
+    for (Sequence x : input) {
+
+        Sequences tmp;
+        tmp.push_back(x);
+
+        for (;;) {
+            Sequence y;
+            int64_t a = x.front();
+            for (auto b : x | views::drop(1)) {
+                y.push_back(b - a);
+                a = b;
+            }
+            if (all_of(y, [](int64_t v) { return v == 0; })) {
+                break;
+            }
+            tmp.push_back(y);
+            std::swap(x, y);
+        }
+
+        actions::reverse(tmp);
+
+        int64_t val{0};
+        for (auto const& s : tmp) {
+            val = s.front() - val;
+        }
+        sum += val;
+
+    }
+    fmt::print("2: {}\n", sum);
+}
+
 int main()
 {
     Sequences input;
@@ -76,6 +111,7 @@ int main()
     }
 
     part1(input);
+    part2(input);
 
     return 0;
 }
