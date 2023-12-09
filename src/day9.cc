@@ -20,9 +20,9 @@ using namespace ranges;
 
 template<typename T> class TD;
 
-void part1(Sequences const& input)
+void process(Sequences const& input)
 {
-    int64_t sum {0};
+    int64_t sum1 {0}, sum2 {0};
 
     for (Sequence x : input) {
         actions::reverse(x);
@@ -46,49 +46,17 @@ void part1(Sequences const& input)
 
         actions::reverse(tmp);
 
-        int64_t val{0};
+        int64_t val1 {0}, val2 {0};
         for (auto const& s : tmp) {
-            val += s.front();
+            val1 += s.front();
+            val2 = s.back() - val2;
         }
-        sum += val;
+        sum1 += val1;
+        sum2 += val2;
 
     }
-    fmt::print("1: {}\n", sum);
-}
-
-void part2(Sequences const& input)
-{
-    int64_t sum {0};
-
-    for (Sequence x : input) {
-
-        Sequences tmp;
-        tmp.push_back(x);
-
-        for (;;) {
-            Sequence y;
-            int64_t a = x.front();
-            for (auto b : x | views::drop(1)) {
-                y.push_back(b - a);
-                a = b;
-            }
-            if (all_of(y, [](int64_t v) { return v == 0; })) {
-                break;
-            }
-            tmp.push_back(y);
-            std::swap(x, y);
-        }
-
-        actions::reverse(tmp);
-
-        int64_t val{0};
-        for (auto const& s : tmp) {
-            val = s.front() - val;
-        }
-        sum += val;
-
-    }
-    fmt::print("2: {}\n", sum);
+    fmt::print("1: {}\n", sum1);
+    fmt::print("2: {}\n", sum2);
 }
 
 int main()
@@ -110,8 +78,7 @@ int main()
         input.push_back(std::move(sequence));
     }
 
-    part1(input);
-    part2(input);
+    process(input);
 
     return 0;
 }
