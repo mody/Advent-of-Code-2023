@@ -27,6 +27,8 @@ struct Direction
     }
 
     constexpr auto operator<=>(Direction const&) const = default;
+
+    constexpr Direction back() const noexcept { return Direction {dx * -1, dy * -1}; }
 };
 
 constinit const Direction North{0, -1};
