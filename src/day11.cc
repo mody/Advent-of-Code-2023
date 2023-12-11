@@ -1,82 +1,70 @@
 #include "point2d.h"
 
 #include <fmt/core.h>
+#include <fmt/ranges.h>
 
+#include <range/v3/action/reverse.hpp>
+#include <range/v3/view/all.hpp>
+#include <range/v3/view/iota.hpp>
+#include <range/v3/view/take.hpp>
+
+#include <cstdint>
 #include <iostream>
+#include <set>
 #include <unordered_set>
 #include <vector>
 
-using Coord = unsigned;
+using Coord = uint64_t;
 using Point = Gfx_2d::Point<Coord>;
 using Map = std::unordered_set<Point>;
 
-void dump(Map const& map)
+Coord process(Map map, unsigned expand = 1)
 {
     Coord max_x{0}, max_y{0};
+    std::set<Coord> has_x, has_y;
     for (auto const& px : map) {
+        has_x.insert(px.x);
+        has_y.insert(px.y);
+
         max_x = std::max(max_x, px.x);
         max_y = std::max(max_y, px.y);
     }
 
-    for(Coord y = 0; y <= max_y; ++y) {
-        for(Coord x = 0; x <= max_x; ++x) {
-            fmt::print("{:c}", map.contains({x,y}) ? '#' : '.');
+    std::vector<Coord> missing_x, missing_y;
+    for (auto i : ranges::views::ints | ranges::views::take(max_x + 1)) {
+        if (!has_x.contains(i)) {
+            missing_x.push_back(i);
         }
-        fmt::print("\n");
     }
-    fmt::print("\n");
-}
-
-void part1(Map map)
-{
-    Coord max_x{0}, max_y{0};
-    for (auto const& px : map) {
-        max_x = std::max(max_x, px.x);
-        max_y = std::max(max_y, px.y);
-    }
-
-    for(Coord y = 0; y <= max_y; ++y) {
-        bool empty{true};
-        for(Coord x = 0; x <= max_x; ++x) {
-            if (map.contains({x, y})) {
-                empty = false;
-                break;
-            }
-        }
-        if (empty) {
-            Map m2;
-            for (auto px : map) {
-                if (px.y > y) {
-                    ++px.y;
-                }
-                m2.insert(std::move(px));
-            }
-            ++y;
-            ++max_y;
-            std::swap(map, m2);
+    for (auto i : ranges::views::ints | ranges::views::take(max_y + 1)) {
+        if (!has_y.contains(i)) {
+            missing_y.push_back(i);
         }
     }
 
-    for(Coord x = 0; x <= max_x; ++x) {
-        bool empty{true};
-        for(Coord y = 0; y <= max_y; ++y) {
-            if (map.contains({x, y})) {
-                empty = false;
-                break;
+    missing_x |= ranges::actions::reverse;
+    missing_y |= ranges::actions::reverse;
+
+    for (Coord xx : missing_x) {
+        Map m2;
+        for (auto px : map) {
+            if (px.x > xx) {
+                px.x += expand;
             }
+            m2.insert(std::move(px));
         }
-        if (empty) {
-            Map m2;
-            for (auto px : map) {
-                if (px.x > x) {
-                    ++px.x;
-                }
-                m2.insert(std::move(px));
+        std::swap(map, m2);
+    }
+
+    for (Coord yy : missing_y) {
+        Map m2;
+        for (auto px : map) {
+            if (px.y > yy) {
+                px.y += expand;
             }
-            ++x;
-            ++max_x;
-            std::swap(map, m2);
+            m2.insert(std::move(px));
         }
+        std::swap(map, m2);
     }
 
     std::vector<Point> stars;
@@ -84,14 +72,14 @@ void part1(Map map)
         stars.push_back(std::move(px));
     }
 
-    unsigned sum{0};
+    uint64_t sum{0};
     for (auto i1 = stars.begin(); i1 != stars.end(); ++i1) {
         for (auto i2 = std::next(i1); i2 != stars.end(); ++i2) {
             sum += i1->manhattan_dist(*i2);
         }
     }
 
-    fmt::print("1: {}\n", sum);
+    return sum;
 }
 
 int main()
@@ -115,7 +103,11 @@ int main()
         ++y;
     }
 
-    part1(map);
+    fmt::print("1: {}\n", process(map, 1));
+    fmt::print(
+        "2: {}\n",
+        process(
+            map, 1000000 - 1));  // -1 because part 2 require to replace a column with columns, process() is expanding
 
     return 0;
 }
