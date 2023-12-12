@@ -1,19 +1,24 @@
 #include <fmt/core.h>
 #include <fmt/ranges.h>
 
-#include <boost/algorithm/string/constants.hpp>
 #include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/constants.hpp>
 #include <boost/algorithm/string/split.hpp>
+#include <boost/container_hash/hash.hpp>
 
 #include <range/v3/range/conversion.hpp>
 #include <range/v3/view/all.hpp>
-#include <range/v3/view/drop.hpp>
 #include <range/v3/view/transform.hpp>
 
-#include <bitset>
+#include <cassert>
 #include <iostream>
+#include <map>
+#include <optional>
 #include <sstream>
+#include <string_view>
 #include <vector>
+
+using namespace ranges;
 
 using Counts = std::vector<unsigned>;
 
@@ -25,73 +30,73 @@ struct Row
 
 using Garden = std::vector<Row>;
 
-struct Processor
+// thanks to https://www.youtube.com/watch?v=g3Ms5e7Jdqo
+uint64_t count(std::string_view springs, std::span<const unsigned> counts)
 {
-    Processor(Counts c)
-        : counts {std::move(c)}
-    { }
+    static std::map<size_t, uint64_t> cache;
 
-    void operator() (std::string mask);
+    if (springs.empty()) return counts.empty() ? 1 : 0;
+    if (counts.empty()) return springs.find('#') == std::string::npos ? 1 : 0;
 
-    unsigned options{0};
-    const Counts counts;
-};
-
-    void Processor::operator()(std::string mask)
-{
-    const auto from = mask.find('?');
-    if (from == std::string::npos) {
-        // check counts
-        Counts cts;
-        unsigned count{0};
-        for (auto c : mask) {
-            if (c == '#') {
-                ++count;
-            } else {
-                if (count) {
-                    cts.push_back(count);
-                }
-                count = 0;
-            }
-        }
-        if (count) {
-            cts.push_back(count);
-        }
-
-        if (cts == counts) {
-            ++options;
-        }
-    } else {
-        // generate
-        const unsigned bits = [&]() -> unsigned {
-            const auto end = mask.find_first_not_of('?', from);
-            if (end == std::string::npos)
-                return 1;
-            else
-                return end - from;
-        }();
-        const unsigned bitmask {(1u << bits) - 1};
-        std::bitset<16> val {0};
-        do {
-            for (unsigned idx {0}; idx < bits; ++idx) {
-                mask.at(from + idx) = val.test(idx) ? '#' : '.';
-            }
-
-            this->operator()(mask);
-
-            val = (val.to_ulong() + 1) & bitmask;
-        } while (val != 0);
+    size_t seed = 0;
+    boost::hash_combine(seed, springs);
+    boost::hash_combine(seed, counts);
+    const auto it = cache.find(seed);
+    if (it != cache.end()) {
+        return it->second;
     }
+
+    uint64_t result {0};
+
+    const unsigned expected = counts.front();
+
+    if (springs.starts_with('.') || springs.starts_with('?')) {
+        result += count(springs.substr(1), counts);
+    }
+
+    if (springs.starts_with('#') || springs.starts_with('?')) {
+        if (expected <= springs.size() && springs.substr(0, expected).find('.') == std::string::npos &&
+                (expected == springs.size() || springs.at(expected) != '#')) {
+            result += count(springs.substr(expected + 1), counts.subspan(1));
+        }
+    }
+
+    cache[seed] = result;
+    return result;
 }
 
 void part1(Garden const& garden)
 {
-    unsigned sum{0};
+    uint64_t sum{0};
+
     for (auto const& row : garden) {
-        Processor p {row.counts};
-        p(row.springs);
-        sum += p.options;
+        auto val = count(row.springs + ".", row.counts);
+        sum += val;
     }
+
+    fmt::print("1: {}\n", sum);
+}
+
+void part2(Garden garden)
+{
+    for (auto& row : garden) {
+        auto springs {row.springs};
+        auto counts {row.counts};
+        for (unsigned i {0}; i < 4; ++i) {
+            springs += '?' + row.springs;
+            counts.insert(counts.end(), row.counts.begin(), row.counts.end());
+        }
+        std::swap(row.springs, springs);
+        std::swap(row.counts, counts);
+    }
+
+    uint64_t sum{0};
+
+    for (auto const& row : garden) {
+        auto val = count(row.springs + ".", row.counts);
+        sum += val;
+    }
+
     fmt::print("1: {}\n", sum);
 }
 
@@ -118,6 +123,7 @@ int main()
     }
 
     part1(garden);
+    part2(garden);
 
     return 0;
 }
