@@ -38,9 +38,8 @@ uint64_t count(std::string_view springs, std::span<const unsigned> counts)
     if (springs.empty()) return counts.empty() ? 1 : 0;
     if (counts.empty()) return springs.find('#') == std::string::npos ? 1 : 0;
 
-    size_t seed = 0;
+    size_t seed = boost::hash_range(counts.begin(), counts.end());
     boost::hash_combine(seed, springs);
-    boost::hash_combine(seed, counts);
     const auto it = cache.find(seed);
     if (it != cache.end()) {
         return it->second;
