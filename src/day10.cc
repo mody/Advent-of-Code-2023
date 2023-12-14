@@ -150,7 +150,7 @@ int main()
                     me = {x, y};
                 }
                 if (c != '.') {
-                    map.insert({{x,y}, c});
+                    map.insert({{x,y}, static_cast<unsigned char>(c)});
                 }
 
                 ++x;
