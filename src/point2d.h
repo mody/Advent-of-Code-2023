@@ -115,8 +115,8 @@ struct hash<Gfx_2d::Point<Coord>>
     size_t operator()(Gfx_2d::Point<Coord> const& p) const noexcept
     {
         size_t seed = 0;
-        boost::hash_combine(seed, std::hash<Coord>{}(p.x));
-        boost::hash_combine(seed, std::hash<Coord>{}(p.y));
+        boost::hash_combine(seed, p.x);
+        boost::hash_combine(seed, p.y);
         return seed;
     }
 };
