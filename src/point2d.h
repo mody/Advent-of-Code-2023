@@ -109,6 +109,18 @@ struct Point
 
 namespace std {
 
+template<>
+struct hash<Gfx_2d::Direction>
+{
+    size_t operator()(Gfx_2d::Direction const& d) const noexcept
+    {
+        size_t seed = 0;
+        boost::hash_combine(seed, d.dx);
+        boost::hash_combine(seed, d.dy);
+        return seed;
+    }
+};
+
 template<typename Coord>
 struct hash<Gfx_2d::Point<Coord>>
 {
