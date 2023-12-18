@@ -93,10 +93,10 @@ target_link_libraries(day16 PRIVATE ${DEFAULT_LIBS} tbb)
 # target_compile_features(day17 PRIVATE cxx_std_20)
 # target_link_libraries(day17 PRIVATE ${DEFAULT_LIBS})
 # 
-# add_executable(day18 src/day18.cc)
-# target_compile_features(day18 PRIVATE cxx_std_20)
-# target_link_libraries(day18 PRIVATE ${DEFAULT_LIBS})
-# 
+add_executable(day18 src/day18.cc)
+target_compile_features(day18 PRIVATE cxx_std_20)
+target_link_libraries(day18 PRIVATE ${DEFAULT_LIBS})
+
 # add_executable(day19 src/day19.cc)
 # target_compile_features(day19 PRIVATE cxx_std_20)
 # target_link_libraries(day19 PRIVATE ${DEFAULT_LIBS})
