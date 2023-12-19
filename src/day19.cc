@@ -1,16 +1,15 @@
 #include <fmt/core.h>
-#include <fmt/ranges.h>
 
 #include <boost/algorithm/string/constants.hpp>
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
 
-#include <range/v3/view/all.hpp>
 #include <range/v3/view/drop.hpp>
 
-#include <any>
 #include <functional>
 #include <iostream>
+#include <map>
+#include <numeric>
 #include <optional>
 #include <unordered_map>
 #include <vector>
@@ -26,12 +25,16 @@ using Parts = std::vector<Part>;
 
 template<typename Op, int Part::*ptr>
 struct Compare {
-    Compare(int v) noexcept
+    explicit Compare(int v) noexcept
         : val {v}
     { }
 
     bool operator() (Part const& p) const noexcept {
         return Op{}(std::mem_fn(ptr)(p), val);
+    }
+
+    bool test(int v) const noexcept {
+        return Op{}(v, val);
     }
 
     int val{0};
@@ -48,6 +51,9 @@ using S_is_gt = Compare<std::greater<int>, &Part::s>;
 
 struct Condition {
     std::string dst;
+    char val_id {' '};
+    char op_id {' '};
+    int val {0};
     std::function<bool(Part const&)> cmp;
 };
 
@@ -103,6 +109,65 @@ void part1(RuleMap const& rules, Parts const& parts)
     fmt::print("1: {}\n", sum);
 }
 
+using RangePart = std::map<char, std::pair<int, int>>;
+
+void check_dst(RuleMap const& rules, RangePart part, std::string const& dst, uint64_t& result)
+{
+    if (dst == "A") {
+        result += std::accumulate(part.begin(), part.end(), 1ull, [](uint64_t a, auto const& r) {
+            return a * (r.second.second - r.second.first + 1);
+        });
+        return;
+    } else if (dst == "R") {
+        return;
+    }
+
+    Rule const& rule {rules.at(dst)};
+    for (auto const& cond : rule.conditions) {
+        if (!cond.cmp) {
+            check_dst(rules, part, cond.dst, result);
+        } else {
+            // split range
+            // px{a<2006:qkq,m>2090:A,rfg}
+            auto& r1 = part.at(cond.val_id);
+            if (r1.first < cond.val && r1.second > cond.val) {
+                // inside the interval
+                RangePart part2{part};
+                if (cond.op_id == '<') {
+                    auto& r2 = part2.at(cond.val_id);
+                    r2.second = cond.val - 1;
+                    r1.first = cond.val;
+                } else {
+                    auto& r2 = part2.at(cond.val_id);
+                    r2.first = cond.val + 1;
+                    r1.second = cond.val;
+                }
+                assert(cond.cmp({part2.at('x').first, part2.at('m').first, part2.at('a').first, part2.at('s').first}));
+                assert(
+                    cond.cmp({part2.at('x').second, part2.at('m').second, part2.at('a').second, part2.at('s').second}));
+                check_dst(rules, part2, cond.dst, result);
+            } else {
+                // outside the interval
+            }
+       }
+    }
+}
+
+void part2(RuleMap const& rules)
+{
+    RangePart part {
+        {'x', {1, 4000}},
+        {'m', {1, 4000}},
+        {'a', {1, 4000}},
+        {'s', {1, 4000}},
+    };
+
+    uint64_t result{0};
+    check_dst(rules, part, "in", result);
+
+    fmt::print("2: {}\n", result);
+}
+
 int main()
 {
     RuleMap rules;
@@ -120,16 +185,16 @@ int main()
                 r.conditions.push_back({.dst = s});
                 break;
             }
-            const char val_id {s.at(0)};
-            const char op_id {s.at(1)};
-            std::string sval = {s.substr(2, colon - 2)};
-            const int val {std::stoi(sval)};
             Condition c {.dst = s.substr(colon + 1)};
-            switch(val_id) {
-            case 'x': if(op_id == '<') c.cmp=X_is_lt{val}; else c.cmp=X_is_gt{val}; break;
-            case 'm': if(op_id == '<') c.cmp=M_is_lt{val}; else c.cmp=M_is_gt{val}; break;
-            case 'a': if(op_id == '<') c.cmp=A_is_lt{val}; else c.cmp=A_is_gt{val}; break;
-            case 's': if(op_id == '<') c.cmp=S_is_lt{val}; else c.cmp=S_is_gt{val}; break;
+            c.val_id = s.at(0);
+            c.op_id = s.at(1);
+            std::string sval = {s.substr(2, colon - 2)};
+            c.val = std::stoi(sval);
+            switch(c.val_id) {
+            case 'x': if(c.op_id == '<') c.cmp=X_is_lt{c.val}; else c.cmp=X_is_gt{c.val}; break;
+            case 'm': if(c.op_id == '<') c.cmp=M_is_lt{c.val}; else c.cmp=M_is_gt{c.val}; break;
+            case 'a': if(c.op_id == '<') c.cmp=A_is_lt{c.val}; else c.cmp=A_is_gt{c.val}; break;
+            case 's': if(c.op_id == '<') c.cmp=S_is_lt{c.val}; else c.cmp=S_is_gt{c.val}; break;
             }
             r.conditions.push_back(std::move(c));
         }
@@ -141,11 +206,8 @@ int main()
             {std::stoi(input.at(2)), std::stoi(input.at(4)), std::stoi(input.at(6)), std::stoi(input.at(8))});
     });
 
-    // for(auto const& p : parts) {
-    //     fmt::print("{{x={},m={},a={},s={}}}\n", p.x, p.m, p.a, p.s);
-    // }
-
     part1(rules, parts);
+    part2(rules);
 
     return 0;
 }
