@@ -29,6 +29,17 @@ struct Direction
     constexpr auto operator<=>(Direction const&) const = default;
 
     constexpr Direction back() const noexcept { return Direction {dx * -1, dy * -1}; }
+
+    constexpr Direction cw90() const noexcept { return Direction {-dy, dx}; }
+    constexpr Direction ccw90() const noexcept { return Direction {dy, -dx}; }
+
+    friend size_t hash_value(Gfx_2d::Direction const& d) noexcept
+    {
+        size_t seed = 0;
+        boost::hash_combine(seed, d.dx);
+        boost::hash_combine(seed, d.dy);
+        return seed;
+    }
 };
 
 constinit const Direction North{0, -1};
@@ -103,29 +114,8 @@ struct Point
         return std::abs(std::make_signed_t<Coord>(x) - std::make_signed_t<Coord>(o.x))
             + std::abs(std::make_signed_t<Coord>(y) - std::make_signed_t<Coord>(o.y));
     }
-};
 
-}  // namespace Gfx_2d
-
-namespace std {
-
-template<>
-struct hash<Gfx_2d::Direction>
-{
-    size_t operator()(Gfx_2d::Direction const& d) const noexcept
-    {
-        size_t seed = 0;
-        boost::hash_combine(seed, d.dx);
-        boost::hash_combine(seed, d.dy);
-        return seed;
-    }
-};
-
-template<typename Coord>
-struct hash<Gfx_2d::Point<Coord>>
-{
-    size_t operator()(Gfx_2d::Point<Coord> const& p) const noexcept
-    {
+    friend size_t hash_value(Gfx_2d::Point<Coord> const& p) noexcept {
         size_t seed = 0;
         boost::hash_combine(seed, p.x);
         boost::hash_combine(seed, p.y);
@@ -133,5 +123,23 @@ struct hash<Gfx_2d::Point<Coord>>
     }
 };
 
-}  // namespace std
 
+}  // namespace Gfx_2d
+
+template<>
+struct std::hash<Gfx_2d::Direction>
+{
+    size_t operator()(Gfx_2d::Direction const& d) const noexcept
+    {
+        return hash_value(d);
+    }
+};
+
+template<typename Coord>
+struct std::hash<Gfx_2d::Point<Coord>>
+{
+    size_t operator()(Gfx_2d::Point<Coord> const& p) const noexcept
+    {
+        return hash_value(p);
+    }
+};
