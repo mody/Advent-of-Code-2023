@@ -3,6 +3,7 @@
 #include <fmt/core.h>
 
 #include <map>
+#include <optional>
 #include <range/v3/action/sort.hpp>
 #include <range/v3/range/conversion.hpp>
 #include <range/v3/view/drop.hpp>
@@ -110,6 +111,60 @@ void part1(Map const& map)
     fmt::print("1: {}\n", seen.at(end_state));
 }
 
+void part2(Map const& map)
+{
+    std::multimap<unsigned, State> queue;
+    std::unordered_map<State, unsigned> seen;
+
+    const Point finish {map.end_x - 1, map.end_y - 1};
+
+    std::optional<State> end_state;
+
+    auto move_and_add_state = [&queue, &seen, &map](unsigned cost, State s) {
+        s.move();
+        if (!map.is_valid(s.px)) return;
+        cost += map.at(s.px) - '0';
+
+        if (seen.insert({s, cost}).second) {
+            queue.insert({cost, std::move(s)});
+        }
+    };
+
+    move_and_add_state(0, {{0,0}, Gfx_2d::Down, 1});
+    move_and_add_state(0, {{0,0}, Gfx_2d::Right, 1});
+
+    for(; !end_state && !queue.empty();) {
+        auto it = queue.begin();
+        const unsigned cost{it->first};
+
+        // fmt::print("Cost: {}\n", cost);
+        for(; it != queue.end() && it->first == cost; ++it) {
+            State const& state {it->second};
+
+            // fmt::print("S: {},{} -> {},{} dist {}\n", state.px.x, state.px.y, state.dir.dx, state.dir.dy, state.dist);
+
+            if (state.px == finish && state.dist >= 4) {
+                end_state = state;
+                it = queue.begin();
+                break;
+            }
+
+            if (state.dist < 10) {
+                move_and_add_state(cost, {state.px, state.dir, state.dist + 1});
+            }
+            if (state.dist >= 4) {
+                move_and_add_state(cost, {state.px, state.dir.cw90(), 1});
+                move_and_add_state(cost, {state.px, state.dir.ccw90(), 1});
+            }
+        }
+        queue.erase(queue.begin(), it);
+    }
+
+    if (end_state) {
+        fmt::print("2: {}\n", seen.at(end_state.value()));
+    }
+}
+
 int main()
 {
     Map map;
@@ -123,6 +178,7 @@ int main()
     map.min_max();
 
     part1(map);
+    part2(map);
 
     return 0;
 }
