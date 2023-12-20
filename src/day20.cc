@@ -7,11 +7,16 @@
 
 #include <range/v3/algorithm/all_of.hpp>
 #include <range/v3/algorithm/find.hpp>
+#include <range/v3/numeric/accumulate.hpp>
+#include <range/v3/view/all.hpp>
+#include <range/v3/view/drop.hpp>
+#include <range/v3/view/map.hpp>
 
 #include <array>
 #include <deque>
+#include <functional>
 #include <iostream>
-#include <range/v3/view/all.hpp>
+#include <numeric>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -38,10 +43,10 @@ struct Conjunction
 struct Processor
 {
     void initialize() noexcept;
-    void start() noexcept;
+    void start(std::function<void(Command const& cmd)> callback) noexcept;
 
     std::deque<Command> queue;
-    std::array<unsigned, 2> signals;
+    std::array<uint64_t, 2> signals{0};
 
     std::vector<std::string> broadcaster;
     std::unordered_map<std::string, Invertor> invertors;
@@ -68,7 +73,7 @@ void Processor::initialize() noexcept
     }
 }
 
-void Processor::start() noexcept
+void Processor::start(std::function<void(Command const& cmd)> callback) noexcept
 {
     queue.clear();
     queue.push_front({"broadcaster", "button", 0});
@@ -78,6 +83,10 @@ void Processor::start() noexcept
     while(!queue.empty()) {
         auto cmd = queue.front();
         queue.pop_front();
+
+        if (callback) {
+            callback(cmd);
+        }
 
         if (cmd.to == "broadcaster") {
             for (auto dst : broadcaster) {
@@ -112,10 +121,44 @@ void Processor::start() noexcept
 void part1(Processor cpu)
 {
     for (unsigned i = 0; i < 1000; ++i) {
-        cpu.start();
+        cpu.start({});
     }
-    // fmt::print("{}\n", ranges::views::all(cpu.signals));
     fmt::print("1: {}\n", cpu.signals.at(0) * cpu.signals.at(1));
+}
+
+void part2(Processor cpu)
+{
+    std::string node;
+
+    auto check = [](std::vector<std::string> const& r, std::string const& id) -> bool {
+        return ranges::find(r, id) != r.end();
+    };
+    for (auto const& [id, c] : cpu.conjunctions) {
+        if (check(c.destinations, "rx")) {
+            node = id;
+            break;
+        }
+    }
+
+    const auto max_size {cpu.conjunctions.at(node).signals.size()};
+    std::unordered_map<std::string, uint64_t> counters;
+
+    uint64_t i {1};
+    for (; counters.size() != max_size; ++i) {
+        cpu.start([&i, &node, &counters](Command const& cmd) {
+            if (cmd.value == 0 || cmd.to != node) [[likely]]
+                return;
+            auto it = counters.find(cmd.from);
+            if (it == counters.end()) {
+                counters[cmd.from] = i;
+            }
+        });
+    }
+
+    using namespace ranges;
+    fmt::print("2: {}\n", accumulate(counters | views::drop(1), counters.begin()->second, [](uint64_t a, auto&& b) {
+                   return std::lcm(a, b.second);
+               }));
 }
 
 int main()
@@ -146,6 +189,7 @@ int main()
     cpu.initialize();
 
     part1(cpu);
+    part2(cpu);
 
     return 0;
 }
