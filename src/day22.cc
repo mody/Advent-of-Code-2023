@@ -12,6 +12,7 @@
 #include <range/v3/view/enumerate.hpp>
 
 #include <cmath>
+#include <deque>
 #include <iostream>
 #include <set>
 #include <vector>
@@ -24,7 +25,9 @@ using Point = Gfx_3d::Point<Coord>;
 using Cube = std::pair<Point, Point>;
 using Cubes = std::vector<Cube>;
 
-void part1(Cubes cubes)
+// thanks to https://www.reddit.com/r/adventofcode/comments/18o7014/comment/kefjrbc/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button
+
+void process(Cubes cubes)
 {
     actions::sort(cubes, [](auto const& lhs, auto const& rhs) { return lhs.first.z < rhs.first.z; });
 
@@ -39,6 +42,10 @@ void part1(Cubes cubes)
     std::vector<std::vector<Coord>> height(max_y, std::vector<Coord>(max_x, 0));
     std::vector<std::vector<Coord>> ids(max_y, std::vector<Coord>(max_x, -1));
     std::set<Coord> singles;
+
+    // first  ... supported_by
+    // second ... supports
+    std::vector<std::pair<std::set<int>, std::set<int>>> support(cubes.size());
 
     for (auto const& [cubeid, cube] : cubes | views::enumerate) {
         assert(cube.first.x <= cube.second.x);
@@ -66,9 +73,45 @@ void part1(Cubes cubes)
         if (supported_by.size() == 1) {
             singles.insert(*supported_by.begin());
         }
+
+        for (auto id : supported_by) {
+            support[cubeid].first.insert(id);
+            support[id].second.insert(cubeid);
+        }
     }
 
     fmt::print("1: {}\n", cubes.size() - singles.size());
+
+    unsigned count2 {0};
+    for (auto const& [cubeid, cube] : cubes | views::enumerate) {
+
+        std::set<int> falling;
+        falling.insert(cubeid);
+
+        std::deque<int> q(support.at(cubeid).second.begin(), support.at(cubeid).second.end());
+        while(!q.empty()) {
+            const auto id {q.front()};
+            q.pop_front();
+
+            if (falling.contains(id)) continue;
+
+            bool would_fall {true};
+            for (auto x : support.at(id).first) {
+                if (!falling.contains(x)) {
+                    would_fall = false;
+                    break;
+                }
+            }
+
+            if (would_fall) {
+                ++count2;
+                falling.insert(id);
+                q.insert(q.end(), support.at(id).second.begin(), support.at(id).second.end());
+            }
+        }
+    }
+
+    fmt::print("2: {}\n", count2);
 }
 
 int main()
@@ -89,7 +132,7 @@ int main()
         cubes.push_back({std::move(p1), std::move(p2)});
     }
 
-    part1(cubes);
+    process(cubes);
 
     return 0;
 }
