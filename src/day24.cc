@@ -1,9 +1,11 @@
-#include <fmt/core.h>
-#include <fmt/ranges.h>
+#include <armadillo>
 
 #include <boost/algorithm/string/constants.hpp>
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
+
+#include <fmt/core.h>
+#include <fmt/ranges.h>
 
 #include <range/v3/range/conversion.hpp>
 #include <range/v3/view/all.hpp>

@@ -13,6 +13,7 @@ find_package(range-v3 REQUIRED)
 #  find_package(RapidJSON REQUIRED)
 find_package(fmt REQUIRED)
 find_package(TBB REQUIRED)
+find_package(Armadillo REQUIRED)
 
 #  find_package(PkgConfig)
 #  pkg_check_modules(CRYPTOPP libcryptopp)
@@ -119,7 +120,7 @@ target_link_libraries(day23 PRIVATE ${DEFAULT_LIBS})
 
 add_executable(day24 src/day24.cc)
 target_compile_features(day24 PRIVATE cxx_std_20)
-target_link_libraries(day24 PRIVATE ${DEFAULT_LIBS})
+target_link_libraries(day24 PRIVATE ${DEFAULT_LIBS} armadillo)
 
 # add_executable(day25 src/day25.cc)
 # target_compile_features(day25 PRIVATE cxx_std_20)
