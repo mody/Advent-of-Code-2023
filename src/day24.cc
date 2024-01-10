@@ -1,6 +1,8 @@
 #include "point2d.h"
 #include "point3d.h"
+#include "Mat.h"
 
+#include <array>
 #include <cmath>
 #include <fmt/core.h>
 #include <fmt/ranges.h>
@@ -17,7 +19,7 @@
 #include <utility>
 #include <vector>
 
-using Coord = int64_t;
+using Coord = __int128_t;
 using Point2 = Gfx_2d::Point<Coord>;
 using Point3 = Gfx_3d::Point<Coord>;
 
@@ -30,8 +32,6 @@ using Map3d = std::vector<Storm3>;
 
 void part1(Map2d map2)
 {
-    // constexpr Coord MIN_X{7}, MAX_X{27};
-    // constexpr Coord MIN_Y{7}, MAX_Y{27};
     constexpr Coord MIN_X{200000000000000}, MAX_X{400000000000000};
     constexpr Coord MIN_Y{200000000000000}, MAX_Y{400000000000000};
 
@@ -49,11 +49,8 @@ void part1(Map2d map2)
             auto const& [x3, y3] = p3;
             auto const& [x4, y4] = p4;
 
-            // fmt::print("({},{}) vs ({},{})\n", x1, y1, x3, y3);
-
             const Coord delitel = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
             if (delitel == 0) {
-                // fmt::print("NO INTERSECTION on X\n");
                 continue;
             }
 
@@ -62,19 +59,6 @@ void part1(Map2d map2)
 
             const double ix = xh / static_cast<double>(delitel);
             const double iy = yh / static_cast<double>(delitel);
-            // fmt::print("INTERSECTION ({:.3f},{:.3f})\n", ix, iy);
-
-            // fmt::print(
-            //     "p1 sign: {}, {}\n",
-            //     std::signbit(d1.dx) == std::signbit(ix - x1),
-            //     std::signbit(d1.dy) == std::signbit(iy - y1));
-            // fmt::print(
-            //     "p2 sign: {}, {}\n",
-            //     std::signbit(d3.dx) == std::signbit(ix - x3),
-            //     std::signbit(d3.dy) == std::signbit(iy - y3));
-
-            // fmt::print("p1 diff {:.3f},{:.3f}\n", x1 - ix, y1 - iy);
-            // fmt::print("p2 diff {:.3f},{:.3f}\n", x3 - ix, y3 - iy);
 
             if (
                 std::signbit(d1.dx) == std::signbit(ix - x1) &&
@@ -89,9 +73,42 @@ void part1(Map2d map2)
         }
     }
 
-    // 19978 TOO LOW
-    // 28266!!
     fmt::print("1: {}\n", cnt);
+}
+
+void part2(Map3d map3)
+{
+    // thanks to https://github.com/DeadlyRedCube/AdventOfCode/blob/main/2023/AOC2023/D24.h
+    const auto A0 {map3.at(0).first};
+    const auto Av {map3.at(0).second};
+    const auto B0 {map3.at(2).first};
+    const auto Bv {map3.at(2).second};
+    const auto C0 {map3.at(5).first};
+    const auto Cv {map3.at(5).second};
+
+    Mat<double, 6, 6> mat {{
+        {0.0 + Av.dy - Bv.dy, 0.0 + Bv.dx - Av.dx, 0.0, 0.0 + B0.y - A0.y, 0.0 + A0.x - B0.x, 0.0},
+        {0.0 + Av.dy - Cv.dy, 0.0 + Cv.dx - Av.dx, 0.0, 0.0 + C0.y - A0.y, 0.0 + A0.x - C0.x, 0.0},
+        {0.0 + Bv.dz - Av.dz, 0.0, 0.0 + Av.dx - Bv.dx, 0.0 + A0.z - B0.z, 0.0, 0.0 + B0.x - A0.x},
+        {0.0 + Cv.dz - Av.dz, 0.0, 0.0 + Av.dx - Cv.dx, 0.0 + A0.z - C0.z, 0.0, 0.0 + C0.x - A0.x},
+        {0.0, 0.0 + Av.dz - Bv.dz, 0.0 + Bv.dy - Av.dy, 0.0, 0.0 + B0.z - A0.z, 0.0 + A0.y - B0.y},
+        {0.0, 0.0 + Av.dz - Cv.dz, 0.0 + Cv.dy - Av.dy, 0.0, 0.0 + C0.z - A0.z, 0.0 + A0.y - C0.y},
+    }};
+
+    const std::array<double, 6> h = {
+        0.0 + (B0.y * Bv.dx - B0.x * Bv.dy) - (A0.y * Av.dx - A0.x * Av.dy),
+        0.0 + (C0.y * Cv.dx - C0.x * Cv.dy) - (A0.y * Av.dx - A0.x * Av.dy),
+        0.0 + (B0.x * Bv.dz - B0.z * Bv.dx) - (A0.x * Av.dz - A0.z * Av.dx),
+        0.0 + (C0.x * Cv.dz - C0.z * Cv.dx) - (A0.x * Av.dz - A0.z * Av.dx),
+        0.0 + (B0.z * Bv.dy - B0.y * Bv.dz) - (A0.z * Av.dy - A0.y * Av.dz),
+        0.0 + (C0.z * Cv.dy - C0.y * Cv.dz) - (A0.z * Av.dy - A0.y * Av.dz),
+    };
+
+    const auto inv = mat.Inverse();
+    const auto res = inv * h;
+    const auto sum {Coord(res.at(0) + res.at(1) + res.at(2))};
+
+    fmt::print("2: {}\n", sum);
 }
 
 int main()
@@ -128,6 +145,7 @@ int main()
     }
 
     part1(std::move(map2));
+    part2(std::move(map3));
 
     return 0;
 }
