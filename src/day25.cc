@@ -10,10 +10,16 @@
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/graph_traits.hpp>
 
+#ifndef __clang__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
+
 #include <boost/graph/stoer_wagner_min_cut.hpp>
+
+#ifndef __clang__
 #pragma GCC diagnostic pop
+#endif
 
 #include <range/v3/view/all.hpp>
 
